@@ -1,5 +1,5 @@
-import { AskRequest, AskResponse, ChatRequest, UploadFileRequest, UploadFileResponse } from "./models";
-
+import { AskRequest, AskResponse, ChatRequest, UploadFileRequest, UploadFileResponse, NewChatResponse } from "./models";
+ 
 export async function askApi(options: AskRequest): Promise<AskResponse> {
   const response = await fetch("/api/ask", {
       method: "POST",
@@ -21,23 +21,24 @@ export async function askApi(options: AskRequest): Promise<AskResponse> {
           }
       })
   });
-
+ 
   const parsedResponse: AskResponse = await response.json();
   if (response.status > 299 || !response.ok) {
       throw Error(parsedResponse.error || "Unknown error");
   }
-
+ 
   return parsedResponse;
 }
-
+ 
 export async function chatApi(options: ChatRequest): Promise<AskResponse> {
-  const response = await fetch("/api/chat", {
+  const response = await fetch("/api/chat/" + globalThis.assistantId, {
       method: "POST",
       headers: {
           "Content-Type": "application/json"
       },
       body: JSON.stringify({
           history: options.history,
+          prompt: options.history[options.history.length-1].user,
           approach: options.approach,
           overrides: {
               semantic_ranker: options.overrides?.semanticRanker,
@@ -52,19 +53,47 @@ export async function chatApi(options: ChatRequest): Promise<AskResponse> {
           }
       })
   });
-
+ 
   const parsedResponse: AskResponse = await response.json();
   if (response.status > 299 || !response.ok) {
       throw Error(parsedResponse.error || "Unknown error");
   }
-
-  return parsedResponse;
+ 
+  const getAnswerResponse = await fetch("/api/chat/" + globalThis.assistantId + "?timestampUTC=2024-05-01T14:14:22Z", {
+    method: "GET",
+    headers: {
+        "Content-Type": "application/json"
+    },
+  })
+ 
+  const parsedanswerResponse: AskResponse = await getAnswerResponse.json();
+  if (response.status > 299 || !response.ok) {
+      throw Error(parsedResponse.error || "Unknown error");
+  }
+ 
+  return parsedanswerResponse;
 }
-
+ 
 export function getCitationFilePath(citation: string): string {
   return `/api/content/${citation}`;
 }
-
+ 
+export async function newChat(
+  chatId: string
+): Promise<NewChatResponse> {
+  const response = await fetch('/api/chat/' + chatId, {
+    method: "PUT",
+  });
+ 
+  const parsedResponse: NewChatResponse = await response.json();
+ 
+  if (response.status > 299 || !response.ok) {
+    throw Error(
+       `Failed to create chat: ${response.statusText}`
+    );
+  }
+  return parsedResponse;
+}
 export async function uploadApi(
   request: UploadFileRequest
 ): Promise<UploadFileResponse> {
@@ -72,14 +101,15 @@ export async function uploadApi(
     method: "POST",
     body: request.formData,
   });
-
+ 
   const parsedResponse: UploadFileResponse = await response.json();
-
+ 
   if (response.status > 299 || !response.ok) {
     throw Error(
       parsedResponse.error || `Failed to upload file: ${response.statusText}`
     );
   }
-
+ 
   return parsedResponse;
 }
+ 

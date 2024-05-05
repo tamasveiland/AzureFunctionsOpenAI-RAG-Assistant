@@ -1,9 +1,9 @@
 import { Outlet, NavLink, Link } from "react-router-dom";
-
+ 
 import github from "../../assets/github.svg";
-
+ 
 import styles from "./Layout.module.css";
-
+ 
 const Layout = () => {
     return (
         <div className={styles.layout}>
@@ -30,7 +30,7 @@ const Layout = () => {
                                 </NavLink>
                             </li>
                             <li className={styles.headerNavLeftMargin}>
-                                <a href="https://github.com/lordlinus/Enterprise-ChatGPT" target={"_blank"} title="Github repository link">
+                                <a href="https://github.com/eamonoreilly/AzureFunctionsOpenAI-RAG-Assistant" target={"_blank"} title="Github repository link">
                                     <img
                                         src={github}
                                         alt="Github logo"
@@ -43,13 +43,13 @@ const Layout = () => {
                             </li>
                         </ul>
                     </nav>
-                    <h4 className={styles.headerRightText}>Azure OpenAI + Cognitive Search</h4>
+                    <h4 className={styles.headerRightText}>Azure OpenAI + AI Search</h4>
                 </div>
             </header>
-
+ 
             <Outlet />
         </div>
     );
 };
-
+ 
 export default Layout;
