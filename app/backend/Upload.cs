@@ -1,4 +1,5 @@
 using System.Net;
+using System.IO;
 using HttpMultipartParser;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
@@ -21,7 +22,7 @@ namespace sample.demo
         public class QueueHttpResponse
         {
             [QueueOutput("filequeue", Connection = "queueConnection")]
-            public QueuePayload QueueMessage { get; set; }
+            public QueuePayload[] QueueMessage { get; set; }
             public HttpResponseData HttpResponse { get; set; }
         }
 
@@ -46,28 +47,28 @@ namespace sample.demo
         public static async Task<QueueHttpResponse> UploadFile(
             [HttpTrigger(AuthorizationLevel.Anonymous, Route = "upload")] HttpRequestData req)
         {
+
+            var fileShare = Environment.GetEnvironmentVariable("fileShare"); 
             // Read file from request
             var parsedFormBody = await MultipartFormDataParser.ParseAsync(req.Body);
-            var file = parsedFormBody.Files[0];
-            var reader = new StreamReader(file.Data);
+            QueuePayload[] payload = new QueuePayload[] { };
 
-            // Save to file share
-            var fileShare = Environment.GetEnvironmentVariable("fileShare");
-            var fileStream = File.Create(fileShare + file.FileName);
-            reader.BaseStream.Seek(0, SeekOrigin.Begin);
-            reader.BaseStream.CopyTo(fileStream);
-            fileStream.Close();
+            // Save file to Azure Files and add file location to queue message
+            foreach (var file in parsedFormBody.Files)
+            {
+                var reader = new StreamReader(file.Data);
+                var fileStream = File.Create(Path.Combine(fileShare, file.FileName));
+                reader.BaseStream.Seek(0, SeekOrigin.Begin);
+                reader.BaseStream.CopyTo(fileStream);
+                fileStream.Close();
+                var queueMessage = new QueuePayload { FileName = Path.Combine(fileShare,file.FileName )};
+                payload = payload.Append(queueMessage).ToArray();
+            }
 
             var responseData = req.CreateResponse(HttpStatusCode.OK);
             var result = "{\"success\":True,\"message\":\"Files processed successfully.\"}";
             await responseData.WriteAsJsonAsync(result, HttpStatusCode.OK);
    
-            // Add file location to queue message
-            var payload = new QueuePayload
-            {
-                FileName = fileShare + file.FileName
-            };
-
             // Return queue message and response as output
             return new QueueHttpResponse
             {
