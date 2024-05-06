@@ -6,7 +6,7 @@ param backendResourceId string
 
 resource frontend 'Microsoft.Web/staticSites@2022-09-01' = {
   name: name
-  location: location
+  location: 'eastus2'
   tags: tags
   sku: {
     name: sku

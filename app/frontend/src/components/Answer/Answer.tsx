@@ -1,13 +1,13 @@
 import { useMemo } from "react";
 import { Stack, IconButton } from "@fluentui/react";
 import DOMPurify from "dompurify";
-
+ 
 import styles from "./Answer.module.css";
-
+ 
 import { AskResponse, getCitationFilePath } from "../../api";
 import { parseAnswerToHtml } from "./AnswerParser";
 import { AnswerIcon } from "./AnswerIcon";
-
+ 
 interface Props {
     answer: AskResponse;
     isSelected?: boolean;
@@ -17,7 +17,7 @@ interface Props {
     onFollowupQuestionClicked?: (question: string) => void;
     showFollowupQuestions?: boolean;
 }
-
+ 
 export const Answer = ({
     answer,
     isSelected,
@@ -27,10 +27,12 @@ export const Answer = ({
     onFollowupQuestionClicked,
     showFollowupQuestions
 }: Props) => {
+ 
+    answer = JSON.parse(answer.toString())
     const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, onCitationClicked), [answer]);
-
+ 
     const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
-
+ 
     return (
         <Stack className={`${styles.answerContainer} ${isSelected && styles.selected}`} verticalAlign="space-between">
             <Stack.Item>
@@ -56,11 +58,11 @@ export const Answer = ({
                     </div>
                 </Stack>
             </Stack.Item>
-
+ 
             <Stack.Item grow>
                 <div className={styles.answerText} dangerouslySetInnerHTML={{ __html: sanitizedAnswerHtml }}></div>
             </Stack.Item>
-
+ 
             {!!parsedAnswer.citations.length && (
                 <Stack.Item>
                     <Stack horizontal wrap tokens={{ childrenGap: 5 }}>
@@ -76,7 +78,7 @@ export const Answer = ({
                     </Stack>
                 </Stack.Item>
             )}
-
+ 
             {!!parsedAnswer.followupQuestions.length && showFollowupQuestions && onFollowupQuestionClicked && (
                 <Stack.Item>
                     <Stack horizontal wrap className={`${!!parsedAnswer.citations.length ? styles.followupQuestionsList : ""}`} tokens={{ childrenGap: 6 }}>
@@ -94,3 +96,4 @@ export const Answer = ({
         </Stack>
     );
 };
+ 

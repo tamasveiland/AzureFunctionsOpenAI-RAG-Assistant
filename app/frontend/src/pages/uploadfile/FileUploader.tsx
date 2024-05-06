@@ -71,7 +71,7 @@ const FileUploader: React.FC = () => {
         {isUploading ? (
           <p>Uploading files...</p>
         ) : (
-          <p>Drag and drop files here or click to select files</p>
+          <p>Drag and drop files here or click to select files. Only text files are supported</p>
         )}
         {files.length > 0 && <ul>{renderFiles()}</ul>}
       </div>

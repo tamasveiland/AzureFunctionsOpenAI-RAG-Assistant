@@ -3,7 +3,7 @@ export const enum Approaches {
     ReadRetrieveRead = "rrr",
     ReadDecomposeAsk = "rda"
 }
-
+ 
 export type AskRequestOverrides = {
     semanticRanker?: boolean;
     semanticCaptions?: boolean;
@@ -15,35 +15,40 @@ export type AskRequestOverrides = {
     promptTemplateSuffix?: string;
     suggestFollowupQuestions?: boolean;
 };
-
+ 
 export type AskRequest = {
     question: string;
     approach: Approaches;
     overrides?: AskRequestOverrides;
 };
-
+ 
 export type AskResponse = {
     answer: string;
     thoughts: string | null;
     data_points: string[];
     error?: string;
 };
-
+ 
 export type ChatTurn = {
     user: string;
     bot?: string;
 };
-
+ 
 export type ChatRequest = {
     history: ChatTurn[];
     approach: Approaches;
     overrides?: AskRequestOverrides;
 };
-
+ 
 export type UploadFileRequest = {
     formData: FormData;
 };
-
+ 
+export type NewChatResponse = {
+    assistantId?: string;
+    error?: string;
+};
+ 
 export type UploadFileResponse = {
     success: boolean;
     message?: string;
