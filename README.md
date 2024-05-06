@@ -1,18 +1,17 @@
-# ChatGPT + Enterprise data with Azure OpenAI
+# Chat + Enterprise data with Azure OpenAI and Azure Functions
 
-This demo is based on [azure-search-openai-demo](https://github.com/Azure-Samples/azure-search-openai-demo) and using static web app for frontend and Azure functions for the backend API's.
+This demo is based on [azure-search-openai-demo](https://github.com/Azure-Samples/azure-search-openai-demo) and uses a static web app for the frontend and Azure functions for the backend API's.
 
-In addition to [azure-search-openai-demo feature](https://github.com/Azure-Samples/azure-search-openai-demo#features) this repo includes:
+This solution uses the [Azure Functions OpenAI triggers and binding extension](https://github.com/Azure/azure-functions-openai-extension) for the backend capabilities. It includes:
 
-- Ability to upload file from UI
-- Update to newer version of langchain(0.0.141)
-- Updated rrr ( read-retrieve-read) approach to use pandas dataframe and Bing search lookup in addition to Azure cognitive search
-  > Note: update azure function config with `BING_SUBSCRIPTION_KEY` to use. Bing API service deployment is not yet included in the `azd` infra deployment
+- Ability to upload text files from UI - Delivered by the embeddings and semantic search output bindings
+- Ask questions of the uploaded files - Enabled by the semantic search input binding
+- Create a chat session and interact with the OpenAI deployed model -  Uses the Assistant bindings to interact wiht the OpenAI model and stores chat history in Azure storage tables automatically
+- In the chat session, ask the LLM to store reminders and then later retrieve them. This capability is delivered by the AssistantSkills trigger in the OpenAI extension for Azure Functions
+- Create Azure functions in different programming language e.g. (C#, Node, Python, Java, PowerShell) and easily replace using config file
+- Static web page is configured with AAD auth by default
 
 <img src="docs/uploadscreen.png" width="600">
-
-- Create Azure functions in different programming language e.g. (C#) and easily replace using config file
-- Static web page by default configured with AAD auth
 
 ### High Level Overview of components
 
@@ -22,23 +21,21 @@ In addition to [azure-search-openai-demo feature](https://github.com/Azure-Sampl
 
 > **IMPORTANT:** In order to deploy and run this example, you'll need an **Azure subscription with access enabled for the Azure OpenAI service**. You can request access [here](https://aka.ms/oaiapply). You can also visit [here](https://azure.microsoft.com/free/cognitive-search/) to get some free Azure credits to get you started.
 
-> **AZURE RESOURCE COSTS** by default this sample will create Azure App Service and Azure Cognitive Search resources that have a monthly cost, as well as Form Recognizer resource that has cost per document page. You can switch them to free versions of each of them if you want to avoid this cost by changing the parameters file under the infra folder (though there are some limits to consider; for example, you can have up to 1 free Cognitive Search resource per subscription, and the free Form Recognizer resource only analyzes the first 2 pages of each document.)
+> **AZURE RESOURCE COSTS** by default this sample will create Azure App Service and Azure AI Search resources that have a monthly cost. You can switch them to free versions of each of them if you want to avoid this cost by changing the parameters file under the infra folder (though there are some limits to consider; for example, you can have up to 1 free AI Search resource per subscription.)
 
 ### Prerequisites
 
 #### To Run Locally
 
 - [Azure Developer CLI](https://aka.ms/azure-dev/install)
-- [Python 3+](https://www.python.org/downloads/)
-  - **Important**: Python and the pip package manager must be in the path in Windows for the setup scripts to work.
-  - **Important**: Ensure you can run `python --version` from console. On Ubuntu, you might need to run `sudo apt install python-is-python3` to link `python` to `python3`.
-- [Node.js](https://nodejs.org/en/download/)
+- [.NET 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) - Backend Functions app is built using .NET 8
+- [Node.js](https://nodejs.org/en/download/) - Frontend is built in TypeScript
 - [Git](https://git-scm.com/downloads)
 - [Powershell 7+ (pwsh)](https://github.com/powershell/powershell) - For Windows users only.
   - **Important**: Ensure you can run `pwsh.exe` from a PowerShell command. If this fails, you likely need to upgrade PowerShell.
 - [Static Web Apps Cli](https://github.com/Azure/static-web-apps-cli#azure-static-web-apps-cli)
 - [Azure Cli](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
-- [Azure functions Core Tools](https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local?tabs=v4%2Clinux%2Ccsharp%2Cportal%2Cbash#install-the-azure-functions-core-tools)
+- [Azure Functions Core Tools](https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local?tabs=v4%2Clinux%2Ccsharp%2Cportal%2Cbash#install-the-azure-functions-core-tools)
 
 > NOTE: Your Azure Account must have `Microsoft.Authorization/roleAssignments/write` permissions, such as [User Access Administrator](https://learn.microsoft.com/azure/role-based-access-control/built-in-roles#user-access-administrator) or [Owner](https://learn.microsoft.com/azure/role-based-access-control/built-in-roles#owner).
 
@@ -89,8 +86,8 @@ Once in the web app:
 ## Resources
 
 - [Primary Repo - azure-search-openai-demo](https://github.com/Azure-Samples/azure-search-openai-demo)
-- [Revolutionize your Enterprise Data with ChatGPT: Next-gen Apps w/ Azure OpenAI and Cognitive Search](https://aka.ms/entgptsearchblog)
-- [Azure Cognitive Search](https://learn.microsoft.com/azure/search/search-what-is-azure-search)
+- [Revolutionize your Enterprise Data with ChatGPT: Next-gen Apps w/ Azure OpenAI and AI Search](https://aka.ms/entgptsearchblog)
+- [Azure AI Search](https://learn.microsoft.com/azure/search/search-what-is-azure-search)
 - [Azure OpenAI Service](https://learn.microsoft.com/azure/cognitive-services/openai/overview)
 
 ## How to purge aad auth
@@ -99,23 +96,9 @@ To remove your data from Azure Static Web Apps, go to <https://identity.azuresta
 
 ## Upload files failures
 
-Currently only PDF docs are supported try to limit to smaller files. Support for large PDF file uploads and other doc version will be added soon
+Currently only text files are supported.
 
-## Azure functions troubleshooting
+## Azure Functions troubleshooting
 
-Enable application insights and check if you have all the required settings configured correctly
-
-- AZURE_FORM_RECOGNIZER_SERVICE
-- AZURE_OPENAI_CHATGPT_DEPLOYMENT
-- AZURE_OPENAI_GPT_DEPLOYMENT
-- AZURE_OPENAI_SERVICE
-- AZURE_SEARCH_INDEX
-- AZURE_SEARCH_KEY
-- AZURE_SEARCH_SERVICE
-- AZURE_STORAGE_ACCOUNT
-- AZURE_STORAGE_CONTAINER
-- AzureWebJobsStorage
-- ENABLE_ORYX_BUILD
-- FUNCTIONS_EXTENSION_VERSION
-- FUNCTIONS_WORKER_RUNTIME
-- SCM_DO_BUILD_DURING_DEPLOYMENT
+Go to Application Insights and go to the Live metrics view to see real time telemtry information.
+Optionally, go to Application Insights and select Logs and view the traces table
