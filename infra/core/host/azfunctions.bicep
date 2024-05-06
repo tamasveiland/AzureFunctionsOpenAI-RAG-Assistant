@@ -6,9 +6,8 @@ param tags object = {}
 @description('Location for Application Insights')
 // param applicationInsightsName string = ''
 param appServicePlanId string
-param formRecognizerService string
-//param formRecognizerServiceKey string
 param azureOpenaiService string
+param appInsightsConnectionString string
 //param azureOpenaiServiceKey string
 param azureOpenaiChatgptDeployment string
 param azureOpenaigptDeployment string
@@ -43,6 +42,7 @@ param runtimeVersion string
 param kind string = 'functionapp'
 
 var storageAccountName = '${uniqueString(resourceGroup().id)}azfunctions'
+var shareName = 'openaifiles'
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = {
   name: storageAccountName
@@ -55,17 +55,36 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = {
     supportsHttpsTrafficOnly: true
     defaultToOAuthAuthentication: true
   }
+
+  resource fileServices 'fileServices' = {
+    name: 'default'
+
+    resource share 'shares' = {
+      name: shareName
+    }
+  }
 }
 
-resource formRecognizerAccount 'Microsoft.CognitiveServices/accounts@2022-12-01' existing = {
-  name : formRecognizerService
-}
 resource azureOpenAiServiceAccount 'Microsoft.CognitiveServices/accounts@2022-12-01' existing = {
   name : azureOpenaiService
 }
 
 resource azureSearchServiceAccount 'Microsoft.Search/searchServices@2022-09-01' existing = {
   name : azureSearchService
+}
+
+resource storageSetting 'Microsoft.Web/sites/config@2021-01-15' = {
+  name: 'azurestorageaccounts'
+  parent: functionApp
+  properties: {
+    '${shareName}': {
+      type: 'AzureFiles'
+      shareName: shareName
+      mountPath: '/${shareName}'
+      accountName: storageAccount.name
+      accessKey: storageAccount.listKeys().keys[0].value
+    }
+  }
 }
 
 resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
@@ -83,7 +102,6 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
       appCommandLine: appCommandLine
       numberOfWorkers: numberOfWorkers != -1 ? numberOfWorkers : null
       autoHealEnabled: autoHealEnabled
-      pythonVersion: runtimeVersion
       cors: {
         allowedOrigins: union([ 'https://portal.azure.com', 'https://ms.portal.azure.com' ], allowedOrigins)
       }
@@ -100,10 +118,6 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
           name: 'FUNCTIONS_WORKER_RUNTIME'
           value: runtimeName
         }
-        // {
-        //   name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-        //   value: applicationInsights.properties.InstrumentationKey
-        // }
         {
           name: 'ENABLE_ORYX_BUILD'
           value: 'true'
@@ -117,72 +131,40 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
           value: '1'
         }
         {
-          name: 'AZURE_FORM_RECOGNIZER_SERVICE'
-          value: formRecognizerAccount.name
+          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+          value: appInsightsConnectionString
         }
         {
-          name: 'AZURE_FORM_RECOGNIZER_KEY'
-          value: formRecognizerAccount.listKeys().key1
+          name: 'AZURE_OPENAI_ENDPOINT'
+          value: 'https://${azureOpenaiService}.openai.azure.com/'
         }
         {
-          name: 'AZURE_OPENAI_SERVICE'
-          value: azureOpenAiServiceAccount.name
-        }
-        {
-          name: 'AZURE_OPENAI_API_KEY'
-          value: azureOpenAiServiceAccount.listKeys().key1
-        }
-        {
-          name: 'AZURE_OPENAI_SERVICE_1'
-          value: azureOpenAiServiceAccount.name
-        }
-        {
-          name: 'AZURE_OPENAI_SERVICE_1_KEY'
-          value: azureOpenAiServiceAccount.listKeys().key1
-        }
-        {
-          name: 'AZURE_OPENAI_SERVICE_2'
-          value: azureOpenAiServiceAccount.name
-        }
-        {
-          name: 'AZURE_OPENAI_SERVICE_2_KEY'
-          value: azureOpenAiServiceAccount.listKeys().key1
-        }
-        {
-          name: 'AZURE_OPENAI_SERVICE_3'
-          value: azureOpenAiServiceAccount.name
-        }
-        {
-          name: 'AZURE_OPENAI_SERVICE_3_KEY'
-          value: azureOpenAiServiceAccount.listKeys().key1
-        }
-        {
-          name: 'AZURE_OPENAI_CHATGPT_DEPLOYMENT'
+          name: 'CHAT_MODEL_DEPLOYMENT_NAME'
           value: azureOpenaiChatgptDeployment
         }
         {
-          name: 'AZURE_OPENAI_GPT_DEPLOYMENT'
+          name: 'EMBEDDING_MODEL_DEPLOYMENT_NAME'
           value: azureOpenaigptDeployment
         }
         {
-          name: 'AZURE_SEARCH_SERVICE'
-          value: azureSearchService
+          name: 'queueConnection'
+          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
         }
         {
-          name: 'AZURE_SEARCH_KEY'
+          name: 'SYSTEM_PROMPT'
+          value: 'You are a helpful assistant. You are responding to requests from a user about internal emails and documents. You can and should refer to the internal documents to help respond to requests. If a user makes a request thats not covered by the documents provided in the query, you must say that you do not have access to the information and not try and get information from other places besides the documents provided. The following is a list of documents that you can refer to when answering questions. The documents are in the format [filename]: [text] and are separated by newlines. If you answer a question by referencing any of the documents, please cite the document in your answer. For example, if you answer a question by referencing info.txt, you should add "Reference: info.txt" to the end of your answer on a separate line.'
+        }
+        {
+          name: 'AISearchEndpoint'
+          value: 'https://${azureSearchService}.search.windows.net'
+        }
+        {
+          name: 'SearchAPIKey'
           value: azureSearchServiceAccount.listAdminKeys().primaryKey
         }
         {
-          name: 'AZURE_SEARCH_INDEX'
-          value: azureSearchIndex
-        }
-        {
-          name: 'AZURE_STORAGE_CONTAINER'
-          value: azureStorageContainerName
-        }
-        {
-          name: 'AZURE_STORAGE_ACCOUNT'
-          value: storageAccountName
+          name: 'fileShare'
+          value:'/${shareName}/'
         }
       ]
       ftpsState: ftpsState

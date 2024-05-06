@@ -39,7 +39,7 @@ cd ../backend
 #   echo "AZURE_SEARCH_KEY is empty, not setting it. Go to Azure portal and set it manually."
 # fi
 
-func azure functionapp publish $AZURE_FUNCTION_NAME --python
+func azure functionapp publish $AZURE_FUNCTION_NAME --dotnetisolated
 
 echo "Deployed successfully."
 cd ../..
