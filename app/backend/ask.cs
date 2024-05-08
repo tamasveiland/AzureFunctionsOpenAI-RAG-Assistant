@@ -19,7 +19,7 @@ namespace sample.demo
         [Function("ask")]
          public  HttpResponseData AskData(
             [HttpTrigger(AuthorizationLevel.Anonymous, Route = "ask")] HttpRequestData req,
-            [SemanticSearchInput("AISearchEndpoint", "openai-index", CredentialSettingName = "SearchAPIKey", Query = "{question}", ChatModel = "%CHAT_MODEL_DEPLOYMENT_NAME%", EmbeddingsModel = "%EMBEDDING_MODEL_DEPLOYMENT_NAME%", SystemPrompt = "%SYSTEM_PROMPT%")] SemanticSearchContext result)
+            [SemanticSearchInput("AISearchEndpoint", "openai-index", Query = "{question}", ChatModel = "%CHAT_MODEL_DEPLOYMENT_NAME%", EmbeddingsModel = "%EMBEDDING_MODEL_DEPLOYMENT_NAME%", SystemPrompt = "%SYSTEM_PROMPT%")] SemanticSearchContext result)
             {
                 _logger.LogInformation("Ask function called...");
                 HttpResponseData responseData = req.CreateResponse(HttpStatusCode.OK);

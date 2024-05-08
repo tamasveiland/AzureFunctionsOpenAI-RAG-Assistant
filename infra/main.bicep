@@ -77,9 +77,8 @@ module appServicePlan 'core/host/appserviceplan.bicep' = {
     tags: tags
     sku: {
       name: 'Y1'
-      capacity: 1
+      tier: 'Dynamic'
     }
-    kind: 'linux'
   }
 }
  

@@ -16,33 +16,27 @@ namespace sample.demo
 
         public Upload(ILogger<Upload> logger)
         {
-            _logger = logger;
+            _logger = logger;            
         }
 
         public class QueueHttpResponse
         {
             [QueueOutput("filequeue", Connection = "queueConnection")]
-            public QueuePayload[] QueueMessage { get; set; }
-            public HttpResponseData HttpResponse { get; set; }
+            public QueuePayload[]? QueueMessage { get; set; }
+            public HttpResponseData? HttpResponse { get; set; }
         }
 
         public class QueuePayload
         {
-            public string FileName { get; set; }
+            public string? FileName { get; set; }
         }
 
-        public class SemanticSearchOutputResponse
-        {
-            [SemanticSearchOutput("AISearchEndpoint", "openai-index", CredentialSettingName = "SearchAPIKey", EmbeddingsModel = "%EMBEDDING_MODEL_DEPLOYMENT_NAME%")]
-            public SearchableDocument? SearchableDocument { get; set; }
-        }
-
-/// <summary>
-/// Uploads the file Azure Files and adds the file location to the queue message.
-/// The file location is then retrieved by the queue trigger to embed the content by the EmbedContent function.
-/// </summary>
-/// <param name="req"></param>
-/// <returns></returns>
+        /// <summary>
+        /// Uploads the file Azure Files and adds the file location to the queue message.
+        /// The file location is then retrieved by the queue trigger to embed the content by the EmbedContent function.
+        /// </summary>
+        /// <param name="req"></param>
+        /// <returns></returns>
         [Function("upload")]
         public static async Task<QueueHttpResponse> UploadFile(
             [HttpTrigger(AuthorizationLevel.Anonymous, Route = "upload")] HttpRequestData req)
@@ -52,6 +46,7 @@ namespace sample.demo
             // Read file from request
             var parsedFormBody = await MultipartFormDataParser.ParseAsync(req.Body);
             QueuePayload[] payload = new QueuePayload[] { };
+  
 
             // Save file to Azure Files and add file location to queue message
             foreach (var file in parsedFormBody.Files)
@@ -77,17 +72,22 @@ namespace sample.demo
             };
         }
 
-        [Function("EmbedContent")]
-            public static async Task<SemanticSearchOutputResponse> EmbedContent(
-            [QueueTrigger("filequeue", Connection = "queueConnection")] QueuePayload queueItem,
-            [EmbeddingsInput("{FileName}", InputType.FilePath, Model = "%EMBEDDING_MODEL_DEPLOYMENT_NAME%")] EmbeddingsContext embeddingsContext)
+        public class EmbeddingsStoreOutputResponse
         {
-            return new SemanticSearchOutputResponse
+            [EmbeddingsStoreOutput("{FileName}", InputType.FilePath,"AISearchEndpoint", "openai-index", Model = "%EMBEDDING_MODEL_DEPLOYMENT_NAME%")]
+            
+            public required SearchableDocument SearchableDocument { get; init; }
+        }
+
+        [Function("EmbedContent")]
+        public static async Task<EmbeddingsStoreOutputResponse> EmbedContent(
+        [QueueTrigger("filequeue", Connection = "queueConnection")] QueuePayload queueItem)
+        {
+            return new EmbeddingsStoreOutputResponse
             {
-                SearchableDocument = new SearchableDocument(queueItem.FileName, embeddingsContext)
+                SearchableDocument = new SearchableDocument(queueItem.FileName)
             };
 
         }
-
     }
 }
