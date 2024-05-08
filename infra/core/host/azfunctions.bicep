@@ -156,10 +156,6 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
           value: 'https://${azureSearchService}.search.windows.net'
         }
         {
-          name: 'SearchAPIKey'
-          value: azureSearchServiceAccount.listAdminKeys().primaryKey
-        }
-        {
           name: 'fileShare'
           value:'c:\\mounts\\${shareName}\\'
         }
