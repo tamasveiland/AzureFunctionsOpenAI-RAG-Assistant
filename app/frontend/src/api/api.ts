@@ -59,19 +59,7 @@ export async function chatApi(options: ChatRequest): Promise<AskResponse> {
       throw Error(parsedResponse.error || "Unknown error");
   }
  
-  const getAnswerResponse = await fetch("/api/chat/" + globalThis.assistantId + "?timestampUTC=2024-05-01T14:14:22Z", {
-    method: "GET",
-    headers: {
-        "Content-Type": "application/json"
-    },
-  })
- 
-  const parsedanswerResponse: AskResponse = await getAnswerResponse.json();
-  if (response.status > 299 || !response.ok) {
-      throw Error(parsedResponse.error || "Unknown error");
-  }
- 
-  return parsedanswerResponse;
+  return parsedResponse;
 }
  
 export function getCitationFilePath(citation: string): string {

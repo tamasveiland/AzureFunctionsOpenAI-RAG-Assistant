@@ -80,7 +80,7 @@ resource storageSetting 'Microsoft.Web/sites/config@2021-01-15' = {
     '${shareName}': {
       type: 'AzureFiles'
       shareName: shareName
-      mountPath: '/${shareName}'
+      mountPath: '/mounts/${shareName}'
       accountName: storageAccount.name
       accessKey: storageAccount.listKeys().keys[0].value
     }
@@ -91,16 +91,13 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
   name: name
   location: location
   tags: tags
-  kind: kind
+  kind: 'functionapp'
   identity: {
     type: 'SystemAssigned'
   }
   properties: {
     serverFarmId: appServicePlanId
     siteConfig: {
-      linuxFxVersion: '${toUpper(runtimeName)}|${runtimeVersion}'
-      appCommandLine: appCommandLine
-      numberOfWorkers: numberOfWorkers != -1 ? numberOfWorkers : null
       autoHealEnabled: autoHealEnabled
       cors: {
         allowedOrigins: union([ 'https://portal.azure.com', 'https://ms.portal.azure.com' ], allowedOrigins)
@@ -119,16 +116,16 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
           value: runtimeName
         }
         {
-          name: 'ENABLE_ORYX_BUILD'
-          value: 'true'
-        }
-        {
-          name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
-          value: 'true'
-        }
-        {
           name: 'WEBSITE_RUN_FROM_PACKAGE'
           value: '1'
+        }
+        {
+          name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING'
+          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
+        }
+        {
+          name: 'WEBSITE_CONTENTSHARE'
+          value: name
         }
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
@@ -164,7 +161,7 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
         }
         {
           name: 'fileShare'
-          value:'/${shareName}/'
+          value:'c:\\mounts\\${shareName}\\'
         }
       ]
       ftpsState: ftpsState
