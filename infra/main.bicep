@@ -16,7 +16,7 @@ param azFunctionName string = ''
 
 
 @allowed([ 'consumption', 'flexconsumption' ])
-param azFunctionHostingPlanType string = 'consumption'
+param azFunctionHostingPlanType string = 'flexconsumption'
 param staticWebsiteName string = ''
  
 param searchServiceName string = ''
