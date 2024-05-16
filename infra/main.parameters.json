@@ -34,6 +34,9 @@
     },
     "storageResourceGroupName": {
       "value": "${AZURE_STORAGE_RESOURCE_GROUP}"
+    },
+    "azFunctionHostingPlanType": {
+      "value": "flexconsumption"
     }
   }
 }

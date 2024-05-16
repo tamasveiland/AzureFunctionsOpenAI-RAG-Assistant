@@ -10,13 +10,18 @@ param sku object = {
   name: 'S0'
 }
  
-resource account 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
+resource account 'Microsoft.CognitiveServices/accounts@2023-10-01-preview' = {
   name: name
   location: location
   tags: tags
   kind: kind
   properties: {
-    customSubDomainName: customSubDomainName
+    customSubDomainName: name
+    networkAcls : {
+      defaultAction: publicNetworkAccess == 'Enabled' ? 'Allow' : 'Deny'
+      virtualNetworkRules: []
+      ipRules: []
+  }
     publicNetworkAccess: publicNetworkAccess
   }
   sku: sku
@@ -28,7 +33,7 @@ resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01
   name: deployment.name
   sku: {
     name: 'Standard'
-    capacity: 40
+    capacity: deployment.capacity
   }
   properties: {
     model: deployment.model

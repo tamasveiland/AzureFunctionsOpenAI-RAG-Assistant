@@ -4,17 +4,12 @@ param tags object = {}
 
 // Reference Properties
 @description('Location for Application Insights')
-// param applicationInsightsName string = ''
 param appServicePlanId string
 param azureOpenaiService string
 param appInsightsConnectionString string
-//param azureOpenaiServiceKey string
 param azureOpenaiChatgptDeployment string
 param azureOpenaigptDeployment string
 param azureSearchService string
-//param azureSearchServiceKey string
-param azureSearchIndex string
-param azureStorageContainerName string
 
 // Microsoft.Web/sites/config
 param allowedOrigins array = []

@@ -3,10 +3,11 @@
 output=$(azd env get-values)
 
 while IFS= read -r line; do
-  name=$(echo "$line" | cut -d'=' -f1)
-  value=$(echo "$line" | cut -d'=' -f2- | sed 's/^"\|"$//g')
-  export "$name"="$value"
-done <<<"$output"
+  name=$(echo $line | cut -d'=' -f1)
+  value=$(echo $line | cut -d'=' -f2 | sed 's/^"\|"$//g')
+  export $name=$value
+  echo "$name=$value"
+done <<<$output
 
 echo "Environment variables set."
 
@@ -39,7 +40,7 @@ cd ../backend
 #   echo "AZURE_SEARCH_KEY is empty, not setting it. Go to Azure portal and set it manually."
 # fi
 
-func azure functionapp publish $AZURE_FUNCTION_NAME --dotnetisolated
+func azure functionapp publish $AZURE_FUNCTION_NAME --dotnet-isolated
 
 echo "Deployed successfully."
 cd ../..
