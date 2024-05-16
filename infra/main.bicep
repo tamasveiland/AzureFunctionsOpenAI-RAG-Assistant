@@ -277,7 +277,7 @@ module openAiPrivateEndpoint 'app/openai-privateendpoint.bicep' = if (azFunction
     location: location
     tags: tags
     virtualNetworkName: serviceVirtualNetwork.outputs.vNetName
-    subnetName: 'openai'
+    openaiSubnetName: serviceVirtualNetwork.outputs.openaiSubnetName
     openAiResourceId: openAi.outputs.id
   }
 }

@@ -3,7 +3,7 @@
 param virtualNetworkName string
 
 @description('Specifies the name of the subnet which contains the virtual machine.')
-param subnetName string
+param openaiSubnetName string
 
 @description('Specifies the location.')
 param location string = resourceGroup().location
@@ -13,12 +13,15 @@ param openAiResourceId string
 param tags object = {}
 
 
-// Virtual Network
-resource vnet 'Microsoft.Network/virtualNetworks@2021-08-01' existing = {
+resource vnet 'Microsoft.Network/virtualNetworks@2022-11-01' existing = {
   name: virtualNetworkName
+
+  resource privateEndpointsSubnet 'subnets' existing = {
+    name: openaiSubnetName
+  }
 }
 
-resource openaiPrivateEndpoint 'Microsoft.Network/privateEndpoints@2021-08-01' = {
+resource openaiPrivateEndpoint 'Microsoft.Network/privateEndpoints@2022-11-01' = {
   name: 'openaiPrivateEndpoint'
   location: location
   tags: tags
@@ -35,7 +38,7 @@ resource openaiPrivateEndpoint 'Microsoft.Network/privateEndpoints@2021-08-01' =
       }
     ]
     subnet: {
-      id: '${vnet.id}/subnets/${subnetName}'
+      id: vnet::privateEndpointsSubnet.id
     }
   }
 }

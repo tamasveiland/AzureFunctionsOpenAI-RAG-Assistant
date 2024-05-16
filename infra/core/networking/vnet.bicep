@@ -5,7 +5,7 @@ param vNetName string
 param location string = resourceGroup().location
 
 @description('Specifies the name of the subnet for the Cognitive Services private endpoint.')
-param stSubnetName string = 'openai'
+param openaiSubnetName string = 'openai'
 
 @description('Specifies the name of the subnet for Function App virtual network integration.')
 param appSubnetName string = 'functionapp'
@@ -28,7 +28,7 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-05-01' = {
     }
     subnets: [
       {
-        name: stSubnetName
+        name: openaiSubnetName
         id: resourceId('Microsoft.Network/virtualNetworks/subnets', vNetName, 'openai')
         properties: {
           addressPrefixes: [
@@ -69,8 +69,8 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-05-01' = {
   }
 }
 
-output storageSubnetName string = virtualNetwork.properties.subnets[0].name
-output storageSubnetID string = virtualNetwork.properties.subnets[0].id
+output openaiSubnetName string = virtualNetwork.properties.subnets[0].name
+output openaiSubnetID string = virtualNetwork.properties.subnets[0].id
 output functionappSubnetName string = virtualNetwork.properties.subnets[1].name
 output functionappSubnetID string = virtualNetwork.properties.subnets[1].id
 output vNetName string = virtualNetwork.name

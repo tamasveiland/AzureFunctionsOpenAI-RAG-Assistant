@@ -10,15 +10,15 @@ param sku object = {
   name: 'S0'
 }
  
-resource account 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
+resource account 'Microsoft.CognitiveServices/accounts@2023-10-01-preview' = {
   name: name
   location: location
   tags: tags
   kind: kind
   properties: {
-    customSubDomainName: customSubDomainName
+    customSubDomainName: name
     networkAcls : {
-      defaultAction: 'Allow'
+      defaultAction: publicNetworkAccess == 'Enabled' ? 'Allow' : 'Deny'
       virtualNetworkRules: []
       ipRules: []
   }
