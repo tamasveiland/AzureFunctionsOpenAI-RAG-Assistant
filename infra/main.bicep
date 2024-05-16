@@ -7,6 +7,7 @@ param environmentName string
  
 @minLength(1)
 @description('Primary location for all resources')
+@allowed([ 'eastus', 'eastus2', 'canadaeast'])
 param location string
  
 param appServicePlanName string = ''
@@ -19,27 +20,16 @@ param azFunctionHostingPlanType string = 'consumption'
 param staticWebsiteName string = ''
  
 param searchServiceName string = ''
-param searchServiceResourceGroupName string = ''
-param searchServiceResourceGroupLocation string = location
  
 param searchServiceSkuName string = 'standard'
 param searchIndexName string = 'gptkbindex'
  
 param storageAccountName string = ''
-param storageResourceGroupName string = ''
-param storageResourceGroupLocation string = location
 param storageContainerName string = 'content'
  
 param openAiServiceName string = ''
-param openAiResourceGroupName string = ''
- 
-// OpenAI is only available in these regions
-// aligned with region location parameter
-@allowed([ 'eastus', 'eastus2', 'canadaeast'])
-param openAiResourceGroupLocation string = location
  
 param openAiSkuName string = 'S0'
- 
 param gptDeploymentName string = 'text-embedding-3-small'
 param gptModelName string = 'text-embedding-3-small'
 param chatGptDeploymentName string = 'chat'
@@ -60,18 +50,6 @@ resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   tags: tags
 }
  
-resource openAiResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' existing = if (!empty(openAiResourceGroupName)) {
-  name: !empty(openAiResourceGroupName) ? openAiResourceGroupName : resourceGroup.name
-}
- 
-resource searchServiceResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' existing = if (!empty(searchServiceResourceGroupName)) {
-  name: !empty(searchServiceResourceGroupName) ? searchServiceResourceGroupName : resourceGroup.name
-}
- 
-resource storageResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' existing = if (!empty(storageResourceGroupName)) {
-  name: !empty(storageResourceGroupName) ? storageResourceGroupName : resourceGroup.name
-}
-
 var appServicePlanSkuName = azFunctionHostingPlanType == 'consumption' ? 'Y1' : 'FC1'
 var appServicePlanSkuTier = azFunctionHostingPlanType == 'consumption' ? 'Dynamic' : 'FlexConsumption'
 // Create an App Service Plan to group applications under the same payment plan and SKU
@@ -91,17 +69,19 @@ module appServicePlan 'core/host/appserviceplan.bicep' = {
  
 module openAi 'core/ai/cognitiveservices.bicep' = {
   name: 'openai'
-  scope: openAiResourceGroup
+  scope: resourceGroup
   params: {
     name: !empty(openAiServiceName) ? openAiServiceName : '${abbrs.cognitiveServicesAccounts}${resourceToken}'
-    location: openAiResourceGroupLocation
+    location: location
     tags: tags
+    publicNetworkAccess: azFunctionHostingPlanType == 'flexconsumption' ? 'Disabled' : 'Enabled'
     sku: {
       name: openAiSkuName
     }
     deployments: [
       {
         name: gptDeploymentName
+        capacity: 300
         model: {
           format: 'OpenAI'
           name: gptModelName
@@ -113,6 +93,7 @@ module openAi 'core/ai/cognitiveservices.bicep' = {
       }
       {
         name: chatGptDeploymentName
+        capacity: 40
         model: {
           format: 'OpenAI'
           name: chatGptModelName
@@ -128,10 +109,10 @@ module openAi 'core/ai/cognitiveservices.bicep' = {
  
 module searchService 'core/search/search-services.bicep' = {
   name: 'search-service'
-  scope: searchServiceResourceGroup
+  scope: resourceGroup
   params: {
     name: !empty(searchServiceName) ? searchServiceName : 'gptkb-${resourceToken}'
-    location: searchServiceResourceGroupLocation
+    location: location
     tags: tags
     authOptions: {
       aadOrApiKey: {
@@ -147,10 +128,10 @@ module searchService 'core/search/search-services.bicep' = {
  
 module storage 'core/storage/storage-account.bicep' = {
   name: 'storage'
-  scope: storageResourceGroup
+  scope: resourceGroup
   params: {
     name: !empty(storageAccountName) ? storageAccountName : '${abbrs.storageStorageAccounts}${resourceToken}'
-    location: storageResourceGroupLocation
+    location: location
     tags: tags
     shareName: shareName
     publicNetworkAccess: 'Enabled'
@@ -210,7 +191,7 @@ module functionflexconsumption 'app/processor.bicep' = if (azFunctionHostingPlan
     azureSearchService: searchService.outputs.name
      appSettings: {
       }
-    //virtualNetworkSubnetId: serviceVirtualNetwork.outputs.appSubnetID
+    virtualNetworkSubnetId: serviceVirtualNetwork.outputs.functionappSubnetID
   }
 }  
 var processorFunctionId = azFunctionHostingPlanType == 'consumption' ? function.outputs.id : functionflexconsumption.outputs.id
@@ -239,7 +220,7 @@ module staticwebsite 'core/host/staticwebsite.bicep' = {
 }
 
 module openAiRoleUser 'app/openai-access.bicep' = {
-  scope: openAiResourceGroup
+  scope: resourceGroup
   name: 'openai-roles'
   params: {
     principalId: processorAppPrincipalId
@@ -249,10 +230,11 @@ module openAiRoleUser 'app/openai-access.bicep' = {
 }
  
 module storageRoleUser 'app/storage-access.bicep' = {
-  scope: storageResourceGroup
+  scope: resourceGroup
   name: 'storage-roles'
   params: {
     principalId: processorAppPrincipalId
+    //This list can likely be reduced to just the roles needed
     roleDefinitionIds: ['b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
                         '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1'
                         'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
@@ -269,12 +251,34 @@ module storageRoleUser 'app/storage-access.bicep' = {
 }
  
 module searchRoleUser 'app/search-access.bicep' = {
-  scope: searchServiceResourceGroup
+  scope: resourceGroup
   name: 'search-roles'
   params: {
     principalId: processorAppPrincipalId
     roleDefinitionIds: ['7ca78c08-252a-4471-8644-bb5ff32d4ba0', '8ebe5a00-799e-43f5-93ac-243d3dce84a7', '1407120a-92aa-4202-b7e9-c0e197c71c8f']
     searchAccountName: searchService.outputs.name
+  }
+}
+
+module serviceVirtualNetwork 'core/networking/vnet.bicep' = if (azFunctionHostingPlanType == 'flexconsumption'){
+  name: 'serviceVirtualNetwork'
+  scope: resourceGroup
+  params: {
+    location: location
+    tags: tags
+    vNetName: '${abbrs.networkVirtualNetworks}${resourceToken}'
+  }
+}
+
+module openAiPrivateEndpoint 'app/openai-privateendpoint.bicep' = if (azFunctionHostingPlanType == 'flexconsumption'){
+  name: 'openAiPrivateEndpoint'
+  scope: resourceGroup
+  params: {
+    location: location
+    tags: tags
+    virtualNetworkName: serviceVirtualNetwork.outputs.vNetName
+    subnetName: 'openai'
+    openAiResourceId: openAi.outputs.id
   }
 }
  
@@ -283,18 +287,15 @@ output AZURE_TENANT_ID string = tenant().tenantId
 output AZURE_RESOURCE_GROUP string = resourceGroup.name
  
 output AZURE_OPENAI_SERVICE string = openAi.outputs.name
-output AZURE_OPENAI_RESOURCE_GROUP string = openAiResourceGroup.name
 output AZURE_OPENAI_GPT_DEPLOYMENT string = gptDeploymentName
 output AZURE_OPENAI_CHATGPT_DEPLOYMENT string = chatGptDeploymentName
 output AZURE_OPENAI_LOCATION string = openAi.outputs.location
  
 output AZURE_SEARCH_INDEX string = searchIndexName
 output AZURE_SEARCH_SERVICE string = searchService.outputs.name
-output AZURE_SEARCH_SERVICE_RESOURCE_GROUP string = searchServiceResourceGroup.name
  
 output AZURE_STORAGE_ACCOUNT string = storage.outputs.name
 output AZURE_STORAGE_CONTAINER string = storageContainerName
-output AZURE_STORAGE_RESOURCE_GROUP string = storageResourceGroup.name
  
 output AZURE_STATICWEBSITE_NAME string = staticwebsite.outputs.name
 output AZURE_FUNCTION_NAME string = azFunctionHostingPlanType == 'consumption' ? function.outputs.name : functionflexconsumption.outputs.SERVICE_PROCESSOR_NAME
