@@ -32,7 +32,9 @@ module processor '../core/host/functions-flexconsumption.bicep' = {
         AZURE_OPENAI_ENDPOINT: 'https://${azureOpenaiService}.openai.azure.com/'
         CHAT_MODEL_DEPLOYMENT_NAME: azureOpenaiChatgptDeployment
         EMBEDDING_MODEL_DEPLOYMENT_NAME: azureOpenaigptDeployment
-        queueConnection__accountName: stg.name
+        //Current issue with managed identity accessing storage when VNet integration is present. Switching to connection string until that is addressed
+        //queueConnection__accountName: stg.name
+        queueConnection: 'DefaultEndpointsProtocol=https;AccountName=${stg.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${stg.listKeys().keys[0].value}'
         SYSTEM_PROMPT: 'You are a helpful assistant. You are responding to requests from a user about internal emails and documents. You can and should refer to the internal documents to help respond to requests. If a user makes a request thats not covered by the documents provided in the query, you must say that you do not have access to the information and not try and get information from other places besides the documents provided. The following is a list of documents that you can refer to when answering questions. The documents are in the format [filename]: [text] and are separated by newlines. If you answer a question by referencing any of the documents, please cite the document in your answer. For example, if you answer a question by referencing info.txt, you should add "Reference: info.txt" to the end of your answer on a separate line.'
         AISearchEndpoint: 'https://${azureSearchService}.search.windows.net'
         fileShare : '/mounts/${shareName}'
