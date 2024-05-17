@@ -6,6 +6,7 @@ using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Azure.Functions.Worker.Extensions.OpenAI.Embeddings;
 using Microsoft.Azure.Functions.Worker.Extensions.OpenAI.Search;
+using System.Runtime.CompilerServices;
 
 
 namespace sample.demo
@@ -21,7 +22,7 @@ namespace sample.demo
 
         public class QueueHttpResponse
         {
-            [QueueOutput("filequeue", Connection = "queueConnection")]
+            [ServiceBusOutput("%ServiceBusQueueName%", Connection = "serviceBusConnection")]
             public QueuePayload[]? QueueMessage { get; set; }
             public HttpResponseData? HttpResponse { get; set; }
         }
@@ -81,11 +82,11 @@ namespace sample.demo
 
         [Function("EmbedContent")]
         public static async Task<EmbeddingsStoreOutputResponse> EmbedContent(
-        [QueueTrigger("filequeue", Connection = "queueConnection")] QueuePayload queueItem)
+        [ServiceBusTrigger("%ServiceBusQueueName%", Connection = "serviceBusConnection")] QueuePayload queueItem)
         {
             return new EmbeddingsStoreOutputResponse
             {
-                SearchableDocument = new SearchableDocument(queueItem.FileName)
+            SearchableDocument = new SearchableDocument(queueItem.FileName)
             };
 
         }

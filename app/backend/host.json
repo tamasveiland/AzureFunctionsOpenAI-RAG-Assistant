@@ -22,8 +22,8 @@
           },
           "storageConnectionName": "OpenAiStorageConnection"
         },
-      "queues": {
-          "batchSize": 1
+        "serviceBus": {
+          "maxConcurrentCalls": 1
       }
       }
 }

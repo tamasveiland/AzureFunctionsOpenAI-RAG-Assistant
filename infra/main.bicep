@@ -14,7 +14,6 @@ param appServicePlanName string = ''
 param resourceGroupName string = ''
 param azFunctionName string = ''
 
-
 @allowed([ 'consumption', 'flexconsumption' ])
 param azFunctionHostingPlanType string = 'flexconsumption'
 param staticWebsiteName string = ''
@@ -25,8 +24,10 @@ param searchServiceSkuName string = 'standard'
 param searchIndexName string = 'gptkbindex'
  
 param storageAccountName string = ''
-param storageContainerName string = 'content'
- 
+
+param serviceBusQueueName string = ''
+param serviceBusNamespaceName string = ''
+
 param openAiServiceName string = ''
  
 param openAiSkuName string = 'S0'
@@ -143,15 +144,23 @@ module storage 'core/storage/storage-account.bicep' = {
       days: 2
     }
     containers: [
-      {
-        name: storageContainerName
-        publicAccess: 'None'
-      }
+
       {
         name: 'deploymentpackage'
         publicAccess: 'None'
       }
     ]
+  }
+}
+
+module serviceBus 'core/message/servicebus.bicep' = {
+  name: 'serviceBus'
+  scope: resourceGroup
+  params: {
+    location: location
+    tags: tags
+    serviceBusNamespaceName: !empty(serviceBusNamespaceName) ? serviceBusNamespaceName : '${abbrs.serviceBusNamespaces}${resourceToken}'
+    serviceBusQueueName : !empty(serviceBusQueueName) ? serviceBusQueueName : '${abbrs.serviceBusNamespacesQueues}${resourceToken}'
   }
 }
 
@@ -189,6 +198,8 @@ module functionflexconsumption 'app/processor.bicep' = if (azFunctionHostingPlan
     azureOpenaigptDeployment: gptDeploymentName
     azureOpenaiService: openAi.outputs.name
     azureSearchService: searchService.outputs.name
+    serviceBusQueueName: serviceBus.outputs.serviceBusQueueName
+    serviceBusNamespaceFQDN: serviceBus.outputs.serviceBusNamespaceFQDN
      appSettings: {
       }
     virtualNetworkSubnetId: serviceVirtualNetwork.outputs.functionappSubnetID
@@ -249,7 +260,19 @@ module storageRoleUser 'app/storage-access.bicep' = {
     storageAccountName: storage.outputs.name
   }
 }
- 
+
+var ServiceBusRoleDefinitionIds  = ['090c5cfd-751d-490a-894a-3ce6f1109419', '4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0'] //Azure Service Bus Data Owner and Data Receiver roles
+// Allow access from processor to Service Bus using a managed identity and Azure Service Bus Data Owner and Data Receiver roles
+module ServiceBusDataOwnerRoleAssignment 'app/servicebus-Access.bicep' = {
+  name: 'ServiceBusDataOwnerRoleAssignment'
+  scope: resourceGroup
+  params: {
+    serviceBusNamespaceName: serviceBus.outputs.serviceBusNamespace
+    roleDefinitionIDs: ServiceBusRoleDefinitionIds
+    principalID: processorAppPrincipalId
+  }
+}
+
 module searchRoleUser 'app/search-access.bicep' = {
   scope: resourceGroup
   name: 'search-roles'
@@ -295,7 +318,9 @@ output AZURE_SEARCH_INDEX string = searchIndexName
 output AZURE_SEARCH_SERVICE string = searchService.outputs.name
  
 output AZURE_STORAGE_ACCOUNT string = storage.outputs.name
-output AZURE_STORAGE_CONTAINER string = storageContainerName
+
+output AZURE_SERVICEBUS_NAMESPACE string = serviceBus.outputs.serviceBusNamespace
+output AZURE_SERVICEBUS_QUEUE string = serviceBus.outputs.serviceBusQueueName
  
 output AZURE_STATICWEBSITE_NAME string = staticwebsite.outputs.name
 output AZURE_FUNCTION_NAME string = azFunctionHostingPlanType == 'consumption' ? function.outputs.name : functionflexconsumption.outputs.SERVICE_PROCESSOR_NAME

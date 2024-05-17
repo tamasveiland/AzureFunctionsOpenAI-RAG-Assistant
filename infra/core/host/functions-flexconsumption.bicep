@@ -68,9 +68,7 @@ resource functions 'Microsoft.Web/sites@2023-12-01' = {
     name: 'appsettings'
     properties: union(appSettings,
       {
-        //Current issue with managed identity accessing storage when VNet integration is present. Switching to connection string until that is addressed
-        AzureWebJobsStorage: 'DefaultEndpointsProtocol=https;AccountName=${stg.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${stg.listKeys().keys[0].value}'
-        //AzureWebJobsStorage__accountName: stg.name
+        AzureWebJobsStorage__accountName: stg.name
         DEPLOYMENT_STORAGE_CONNECTION_STRING: stg.name
         APPLICATIONINSIGHTS_CONNECTION_STRING: appInsightsConnectionString
       })
