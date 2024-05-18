@@ -1,6 +1,6 @@
-# Azure az webapp deployment details
-.azure
-*_env
+# Visual Studio Files
+.vs/
+local.settings.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
