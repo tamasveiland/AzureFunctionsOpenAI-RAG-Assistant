@@ -1,8 +1,8 @@
 using System.Net;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Extensions.OpenAI.Search;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
-using Microsoft.Azure.Functions.Worker.Extensions.OpenAI.Search;
 using Newtonsoft.Json;
 
 namespace sample.demo
@@ -17,17 +17,29 @@ namespace sample.demo
         }
 
         [Function("ask")]
-         public  HttpResponseData AskData(
+        public HttpResponseData AskData(
             [HttpTrigger(AuthorizationLevel.Anonymous, Route = "ask")] HttpRequestData req,
-            [SemanticSearchInput("AISearchEndpoint", "openai-index", Query = "{question}", ChatModel = "%CHAT_MODEL_DEPLOYMENT_NAME%", EmbeddingsModel = "%EMBEDDING_MODEL_DEPLOYMENT_NAME%", SystemPrompt = "%SYSTEM_PROMPT%")] SemanticSearchContext result)
-            {
-                _logger.LogInformation("Ask function called...");
-                HttpResponseData responseData = req.CreateResponse(HttpStatusCode.OK);
+            [SemanticSearchInput(
+                "AISearchEndpoint",
+                "openai-index",
+                Query = "{question}",
+                ChatModel = "%CHAT_MODEL_DEPLOYMENT_NAME%",
+                EmbeddingsModel = "%EMBEDDING_MODEL_DEPLOYMENT_NAME%",
+                SystemPrompt = "%SYSTEM_PROMPT%"
+            )]
+                SemanticSearchContext result
+        )
+        {
+            _logger.LogInformation("Ask function called...");
+            HttpResponseData responseData = req.CreateResponse(HttpStatusCode.OK);
 
-                var answer = "{\"data_points\":[],\"answer\":" + JsonConvert.ToString(result.Response) + ",\"thoughts\":null}";
-                responseData.WriteAsJsonAsync(answer, HttpStatusCode.OK);
+            var answer =
+                "{\"data_points\":[],\"answer\":"
+                + JsonConvert.ToString(result.Response)
+                + ",\"thoughts\":null}";
+            responseData.WriteAsJsonAsync(answer, HttpStatusCode.OK);
 
-                return responseData;
-            }
+            return responseData;
+        }
     }
 }

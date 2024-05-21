@@ -85,26 +85,39 @@ class CosmosDbTodoManager : ITodoManager
 
         if (string.IsNullOrEmpty(CosmosDatabaseName) || string.IsNullOrEmpty(CosmosContainerName))
         {
-            throw new ArgumentNullException("CosmosDatabaseName and CosmosContainerName must be set as environment variables or in local.settings.json");
+            throw new ArgumentNullException(
+                "CosmosDatabaseName and CosmosContainerName must be set as environment variables or in local.settings.json"
+            );
         }
 
         this.logger = loggerFactory.CreateLogger<CosmosDbTodoManager>();
         cosmosClient.CreateDatabaseIfNotExistsAsync(CosmosDatabaseName).Wait();
-        cosmosClient.GetDatabase(CosmosDatabaseName).CreateContainerIfNotExistsAsync(CosmosContainerName, "/id").Wait();
+        cosmosClient
+            .GetDatabase(CosmosDatabaseName)
+            .CreateContainerIfNotExistsAsync(CosmosContainerName, "/id")
+            .Wait();
         this.container = cosmosClient.GetContainer(CosmosDatabaseName, CosmosContainerName);
     }
 
     public async Task AddTodoAsync(TodoItem todo)
     {
-        this.logger.LogInformation("Adding todo ID = {Id} to container '{Container}'.", todo.Id, this.container.Id);
+        this.logger.LogInformation(
+            "Adding todo ID = {Id} to container '{Container}'.",
+            todo.Id,
+            this.container.Id
+        );
         await this.container.CreateItemAsync(todo, new PartitionKey(todo.Id));
     }
 
     public async Task<IReadOnlyList<TodoItem>> GetTodosAsync()
     {
-        this.logger.LogInformation("Getting all todos from container '{Container}'.", this.container.Id);
+        this.logger.LogInformation(
+            "Getting all todos from container '{Container}'.",
+            this.container.Id
+        );
         FeedIterator<TodoItem> query = this.container.GetItemQueryIterator<TodoItem>(
-            new QueryDefinition("SELECT * FROM c"));
+            new QueryDefinition("SELECT * FROM c")
+        );
 
         List<TodoItem> results = new();
         while (query.HasMoreResults)
@@ -113,7 +126,11 @@ class CosmosDbTodoManager : ITodoManager
             results.AddRange(response.Resource);
         }
 
-        this.logger.LogInformation("Found {Count} todos in container '{Container}'.", results.Count, this.container.Id);
+        this.logger.LogInformation(
+            "Found {Count} todos in container '{Container}'.",
+            results.Count,
+            this.container.Id
+        );
         return results;
     }
 }
