@@ -1,12 +1,10 @@
 using System.Net;
-using System.IO;
 using HttpMultipartParser;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Azure.Functions.Worker.Extensions.OpenAI.Embeddings;
 using Microsoft.Azure.Functions.Worker.Extensions.OpenAI.Search;
-using System.Runtime.CompilerServices;
 
 
 namespace sample.demo
@@ -20,18 +18,6 @@ namespace sample.demo
             _logger = logger;            
         }
 
-        public class QueueHttpResponse
-        {
-            [ServiceBusOutput("%ServiceBusQueueName%", Connection = "serviceBusConnection")]
-            public QueuePayload[]? QueueMessage { get; set; }
-            public HttpResponseData? HttpResponse { get; set; }
-        }
-
-        public class QueuePayload
-        {
-            public string? FileName { get; set; }
-        }
-
         /// <summary>
         /// Uploads the file Azure Files and adds the file location to the queue message.
         /// The file location is then retrieved by the queue trigger to embed the content by the EmbedContent function.
@@ -43,7 +29,7 @@ namespace sample.demo
             [HttpTrigger(AuthorizationLevel.Anonymous, Route = "upload")] HttpRequestData req)
         {
 
-            var fileShare = Environment.GetEnvironmentVariable("fileShare"); 
+            var fileShare = Environment.GetEnvironmentVariable("fileShare") ?? "/mounts/openaifiles"; 
             // Read file from request
             var parsedFormBody = await MultipartFormDataParser.ParseAsync(req.Body);
             QueuePayload[] payload = new QueuePayload[] { };
@@ -73,22 +59,34 @@ namespace sample.demo
             };
         }
 
-        public class EmbeddingsStoreOutputResponse
-        {
-            [EmbeddingsStoreOutput("{FileName}", InputType.FilePath,"AISearchEndpoint", "openai-index", Model = "%EMBEDDING_MODEL_DEPLOYMENT_NAME%")]
-            
-            public required SearchableDocument SearchableDocument { get; init; }
-        }
-
         [Function("EmbedContent")]
         public static async Task<EmbeddingsStoreOutputResponse> EmbedContent(
         [ServiceBusTrigger("%ServiceBusQueueName%", Connection = "serviceBusConnection")] QueuePayload queueItem)
         {
             return new EmbeddingsStoreOutputResponse
             {
-            SearchableDocument = new SearchableDocument(queueItem.FileName)
+                SearchableDocument = new SearchableDocument(queueItem.FileName ?? "")
             };
 
+        }
+
+        public class EmbeddingsStoreOutputResponse
+        {
+            [EmbeddingsStoreOutput("{FileName}", InputType.FilePath, "AISearchEndpoint", "openai-index", Model = "%EMBEDDING_MODEL_DEPLOYMENT_NAME%")]
+
+            public required SearchableDocument SearchableDocument { get; init; }
+        }
+
+        public class QueueHttpResponse
+        {
+            [ServiceBusOutput("%ServiceBusQueueName%", Connection = "serviceBusConnection")]
+            public QueuePayload[]? QueueMessage { get; set; }
+            public HttpResponseData? HttpResponse { get; set; }
+        }
+
+        public class QueuePayload
+        {
+            public string? FileName { get; set; }
         }
     }
 }

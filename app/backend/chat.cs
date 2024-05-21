@@ -4,7 +4,6 @@ using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Microsoft.Azure.Functions.Worker.Extensions.OpenAI.Assistants;
-using Newtonsoft.Json.Linq;
 
 namespace sample.demo
 {
@@ -15,14 +14,6 @@ namespace sample.demo
         public Chat(ILogger<Chat> logger)
         {
             _logger = logger;
-        }
-
-        public class CreateChatBotOutput
-        {
-            [AssistantCreateOutput()]
-            public AssistantCreateRequest? ChatBotCreateRequest { get; set; }
-
-            public HttpResponseData? HttpResponse { get; set; }
         }
 
         [Function("chat")]
@@ -80,6 +71,14 @@ namespace sample.demo
             var result = "{\"data_points\":[],\"answer\":" + JsonConvert.ToString(state.RecentMessages.LastOrDefault()?.Content ?? "No response returned.") + ",\"thoughts\":null}";
             await response.WriteAsJsonAsync(result);
             return response;
+        }
+
+        public class CreateChatBotOutput
+        {
+            [AssistantCreateOutput()]
+            public AssistantCreateRequest? ChatBotCreateRequest { get; set; }
+
+            public HttpResponseData? HttpResponse { get; set; }
         }
     }
 }
