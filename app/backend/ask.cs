@@ -1,8 +1,10 @@
 using System.Net;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.OpenAI.Search;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.Identity.Client;
 using Newtonsoft.Json;
 
 namespace sample.demo
@@ -17,7 +19,7 @@ namespace sample.demo
         }
 
         [Function("ask")]
-        public HttpResponseData AskData(
+        public IActionResult AskData(
             [HttpTrigger(AuthorizationLevel.Anonymous, Route = "ask")] HttpRequestData req,
             [SemanticSearchInput(
                 "AISearchEndpoint",
@@ -31,15 +33,13 @@ namespace sample.demo
         )
         {
             _logger.LogInformation("Ask function called...");
-            HttpResponseData responseData = req.CreateResponse(HttpStatusCode.OK);
+            
+            var answer = new AnswerResult(new string[] { }, result.Response, "");
 
-            var answer =
-                "{\"data_points\":[],\"answer\":"
-                + JsonConvert.ToString(result.Response)
-                + ",\"thoughts\":null}";
-            responseData.WriteAsJsonAsync(answer, HttpStatusCode.OK);
+            return new OkObjectResult(answer);
 
-            return responseData;
         }
+
+        public record AnswerResult(string[] data_points, string answer, string thoughts);
     }
 }

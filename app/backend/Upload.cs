@@ -1,5 +1,7 @@
 using System.Net;
 using HttpMultipartParser;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.OpenAI.Embeddings;
 using Microsoft.Azure.Functions.Worker.Extensions.OpenAI.Search;
@@ -49,16 +51,13 @@ namespace sample.demo
                 payload = payload.Append(queueMessage).ToArray();
             }
 
-            var responseData = req.CreateResponse(HttpStatusCode.OK);
-            var result = "{\"success\":True,\"message\":\"Files processed successfully.\"}";
-            await responseData.WriteAsJsonAsync(result, HttpStatusCode.OK);
-
+            var result = new UploadResponse("File uploaded successfully", true);
             // Return queue message and response as output
-            return new QueueHttpResponse { QueueMessage = payload, HttpResponse = responseData };
+            return new QueueHttpResponse { QueueMessage = payload, HttpResponse = new OkObjectResult(result) };
         }
 
         [Function("EmbedContent")]
-        public static async Task<EmbeddingsStoreOutputResponse> EmbedContent(
+        public static EmbeddingsStoreOutputResponse EmbedContent(
             [ServiceBusTrigger("%ServiceBusQueueName%", Connection = "serviceBusConnection")]
                 QueuePayload queueItem
         )
@@ -85,12 +84,16 @@ namespace sample.demo
         {
             [ServiceBusOutput("%ServiceBusQueueName%", Connection = "serviceBusConnection")]
             public QueuePayload[]? QueueMessage { get; set; }
-            public HttpResponseData? HttpResponse { get; set; }
+
+            [HttpResult]
+            public IActionResult? HttpResponse { get; set; }
         }
 
         public class QueuePayload
         {
             public string? FileName { get; set; }
         }
+
+        public record UploadResponse(string Message, bool Success);
     }
 }
