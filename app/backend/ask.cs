@@ -40,7 +40,7 @@ namespace sample.demo
         public record answer(
             [property: JsonPropertyName("data_points")] string[] DataPoints,
             [property: JsonPropertyName("answer")] string Answer,
-            [property: JsonPropertyName("thoughts")] string thoughts
+            [property: JsonPropertyName("thoughts")] string Thoughts
         ) { };
     }
 }
