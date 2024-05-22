@@ -1,10 +1,9 @@
 using System.Net;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Extensions.OpenAI.Assistants;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Microsoft.Azure.Functions.Worker.Extensions.OpenAI.Assistants;
-using Newtonsoft.Json.Linq;
 
 namespace sample.demo
 {
@@ -17,26 +16,19 @@ namespace sample.demo
             _logger = logger;
         }
 
-        public class CreateChatBotOutput
-        {
-            [AssistantCreateOutput()]
-            public AssistantCreateRequest? ChatBotCreateRequest { get; set; }
-
-            public HttpResponseData? HttpResponse { get; set; }
-        }
-
         [Function("chat")]
         public static async Task<CreateChatBotOutput> CreateAssistant(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "chat/{assistantId}")] HttpRequestData req,
-        string assistantId)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "chat/{assistantId}")]
+                HttpRequestData req,
+            string assistantId
+        )
         {
             var responseJson = new { assistantId };
 
-            string instructions =
-               """
-            Don't make assumptions about what values to plug into functions.
-            Ask for clarification if a user request is ambiguous.
-            """;
+            string instructions = """
+                Don't make assumptions about what values to plug into functions.
+                Ask for clarification if a user request is ambiguous.
+                """;
 
             HttpResponseData response = req.CreateResponse();
 
@@ -56,30 +48,57 @@ namespace sample.demo
 
         [Function("chatQuery")]
         public static async Task<PostResponseOutput> ChatQuery(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "chat/{assistantId}")] HttpRequestData req, string assistantId,
-        [AssistantPostInput("{assistantId}", "{prompt}", Model = "%CHAT_MODEL_DEPLOYMENT_NAME%")] AssistantState state)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "chat/{assistantId}")]
+                HttpRequestData req,
+            string assistantId,
+            [AssistantPostInput(
+                "{assistantId}",
+                "{prompt}",
+                Model = "%CHAT_MODEL_DEPLOYMENT_NAME%"
+            )]
+                AssistantState state
+        )
         {
             // Send response to client in expected format, including assistantId
             HttpResponseData responseData = req.CreateResponse(HttpStatusCode.OK);
-            var result = "{\"data_points\":[],\"answer\":" + JsonConvert.ToString(state.RecentMessages.LastOrDefault()?.Content ?? "No response returned.") + ",\"thoughts\":null}";
+            var result =
+                "{\"data_points\":[],\"answer\":"
+                + JsonConvert.ToString(
+                    state.RecentMessages.LastOrDefault()?.Content ?? "No response returned."
+                )
+                + ",\"thoughts\":null}";
             await responseData.WriteAsJsonAsync(result, HttpStatusCode.OK);
 
-            return new PostResponseOutput   
-            {
-                HttpResponse = responseData,
-            };
+            return new PostResponseOutput { HttpResponse = responseData, };
         }
 
         [Function(nameof(GetChatState))]
         public static async Task<HttpResponseData> GetChatState(
-       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "chat/{assistantId}")] HttpRequestData req, string assistantId,
-       [AssistantQueryInput("{assistantId}", TimestampUtc = "{Query.timestampUTC}")] AssistantState state)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "chat/{assistantId}")]
+                HttpRequestData req,
+            string assistantId,
+            [AssistantQueryInput("{assistantId}", TimestampUtc = "{Query.timestampUTC}")]
+                AssistantState state
+        )
         {
             HttpResponseData response = req.CreateResponse(HttpStatusCode.OK);
             // Returns the last message from the history table which will be the latest answer to the last question
-            var result = "{\"data_points\":[],\"answer\":" + JsonConvert.ToString(state.RecentMessages.LastOrDefault()?.Content ?? "No response returned.") + ",\"thoughts\":null}";
+            var result =
+                "{\"data_points\":[],\"answer\":"
+                + JsonConvert.ToString(
+                    state.RecentMessages.LastOrDefault()?.Content ?? "No response returned."
+                )
+                + ",\"thoughts\":null}";
             await response.WriteAsJsonAsync(result);
             return response;
+        }
+
+        public class CreateChatBotOutput
+        {
+            [AssistantCreateOutput()]
+            public AssistantCreateRequest? ChatBotCreateRequest { get; set; }
+
+            public HttpResponseData? HttpResponse { get; set; }
         }
     }
 }

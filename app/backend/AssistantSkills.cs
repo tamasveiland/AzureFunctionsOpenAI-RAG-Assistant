@@ -1,7 +1,6 @@
-
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Extensions.Logging;
 using Microsoft.Azure.Functions.Worker.Extensions.OpenAI.Assistants;
+using Microsoft.Extensions.Logging;
 
 namespace AssistantSample;
 
@@ -29,7 +28,10 @@ public class AssistantSkills
     /// Called by the assistant to create new todo tasks.
     /// </summary>
     [Function(nameof(AddTodo))]
-    public Task AddTodo([AssistantSkillTrigger("Create a new todo task", Model = "%CHAT_MODEL_DEPLOYMENT_NAME%")] string taskDescription)
+    public Task AddTodo(
+        [AssistantSkillTrigger("Create a new todo task", Model = "%CHAT_MODEL_DEPLOYMENT_NAME%")]
+            string taskDescription
+    )
     {
         if (string.IsNullOrEmpty(taskDescription))
         {
@@ -47,7 +49,12 @@ public class AssistantSkills
     /// </summary>
     [Function(nameof(GetTodos))]
     public Task<IReadOnlyList<TodoItem>> GetTodos(
-        [AssistantSkillTrigger("Fetch the list of previously created todo tasks", Model = "%CHAT_MODEL_DEPLOYMENT_NAME%")] object inputIgnored)
+        [AssistantSkillTrigger(
+            "Fetch the list of previously created todo tasks",
+            Model = "%CHAT_MODEL_DEPLOYMENT_NAME%"
+        )]
+            object inputIgnored
+    )
     {
         this.logger.LogInformation("Fetching list of todos");
 

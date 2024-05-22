@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using System.Text.Json.Serialization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using AssistantSample;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker;
@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 var host = new HostBuilder()
-    .ConfigureFunctionsWorkerDefaults()
+    .ConfigureFunctionsWebApplication()
     .ConfigureServices(services =>
     {
         services.AddApplicationInsightsTelemetryWorkerService();
@@ -22,7 +22,9 @@ var host = new HostBuilder()
             options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         });
 
-        string? cosmosDbConnectionString = Environment.GetEnvironmentVariable("CosmosDbConnectionString");
+        string? cosmosDbConnectionString = Environment.GetEnvironmentVariable(
+            "CosmosDbConnectionString"
+        );
         if (string.IsNullOrEmpty(cosmosDbConnectionString))
         {
             // Use an in-memory implementation of ITodoManager if no CosmosDB connection string is provided
@@ -32,24 +34,25 @@ var host = new HostBuilder()
         {
             // Use CosmosDB implementation of ITodoManager
             // Reference: https://learn.microsoft.com/azure/cosmos-db/nosql/best-practice-dotnet#best-practices-for-http-connections
-            SocketsHttpHandler socketsHttpHandler = new()
-            {
-                PooledConnectionLifetime = TimeSpan.FromMinutes(5)
-            };
+            SocketsHttpHandler socketsHttpHandler =
+                new() { PooledConnectionLifetime = TimeSpan.FromMinutes(5) };
 
             services.AddSingleton(socketsHttpHandler);
 
             services.AddSingleton(serviceProvider =>
             {
-                SocketsHttpHandler socketsHttpHandler = serviceProvider.GetRequiredService<SocketsHttpHandler>();
-                CosmosClientOptions cosmosClientOptions = new()
-                {
-                    HttpClientFactory = () => new HttpClient(socketsHttpHandler, disposeHandler: false),
-                    SerializerOptions = new CosmosSerializationOptions
+                SocketsHttpHandler socketsHttpHandler =
+                    serviceProvider.GetRequiredService<SocketsHttpHandler>();
+                CosmosClientOptions cosmosClientOptions =
+                    new()
                     {
-                        PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
-                    }
-                };
+                        HttpClientFactory = () =>
+                            new HttpClient(socketsHttpHandler, disposeHandler: false),
+                        SerializerOptions = new CosmosSerializationOptions
+                        {
+                            PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+                        }
+                    };
 
                 return new CosmosClient(cosmosDbConnectionString, cosmosClientOptions);
             });

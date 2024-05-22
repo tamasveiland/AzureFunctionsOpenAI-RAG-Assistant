@@ -1,13 +1,12 @@
 using System.Net;
-using System.IO;
 using HttpMultipartParser;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.Extensions.Logging;
 using Microsoft.Azure.Functions.Worker.Extensions.OpenAI.Embeddings;
 using Microsoft.Azure.Functions.Worker.Extensions.OpenAI.Search;
-using System.Runtime.CompilerServices;
-
+using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Extensions.Logging;
 
 namespace sample.demo
 {
@@ -17,19 +16,7 @@ namespace sample.demo
 
         public Upload(ILogger<Upload> logger)
         {
-            _logger = logger;            
-        }
-
-        public class QueueHttpResponse
-        {
-            [ServiceBusOutput("%ServiceBusQueueName%", Connection = "serviceBusConnection")]
-            public QueuePayload[]? QueueMessage { get; set; }
-            public HttpResponseData? HttpResponse { get; set; }
-        }
-
-        public class QueuePayload
-        {
-            public string? FileName { get; set; }
+            _logger = logger;
         }
 
         /// <summary>
@@ -40,14 +27,14 @@ namespace sample.demo
         /// <returns></returns>
         [Function("upload")]
         public static async Task<QueueHttpResponse> UploadFile(
-            [HttpTrigger(AuthorizationLevel.Anonymous, Route = "upload")] HttpRequestData req)
+            [HttpTrigger(AuthorizationLevel.Anonymous, Route = "upload")] HttpRequestData req
+        )
         {
-
-            var fileShare = Environment.GetEnvironmentVariable("fileShare"); 
+            var fileShare =
+                Environment.GetEnvironmentVariable("fileShare") ?? "/mounts/openaifiles";
             // Read file from request
             var parsedFormBody = await MultipartFormDataParser.ParseAsync(req.Body);
             QueuePayload[] payload = new QueuePayload[] { };
-  
 
             // Save file to Azure Files and add file location to queue message
             foreach (var file in parsedFormBody.Files)
@@ -57,38 +44,56 @@ namespace sample.demo
                 reader.BaseStream.Seek(0, SeekOrigin.Begin);
                 reader.BaseStream.CopyTo(fileStream);
                 fileStream.Close();
-                var queueMessage = new QueuePayload { FileName = Path.Combine(fileShare,file.FileName )};
+                var queueMessage = new QueuePayload
+                {
+                    FileName = Path.Combine(fileShare, file.FileName)
+                };
                 payload = payload.Append(queueMessage).ToArray();
             }
 
-            var responseData = req.CreateResponse(HttpStatusCode.OK);
-            var result = "{\"success\":True,\"message\":\"Files processed successfully.\"}";
-            await responseData.WriteAsJsonAsync(result, HttpStatusCode.OK);
-   
+            var result = new UploadResponse("File uploaded successfully", true);
             // Return queue message and response as output
-            return new QueueHttpResponse
+            return new QueueHttpResponse { QueueMessage = payload, HttpResponse = new OkObjectResult(result) };
+        }
+
+        [Function("EmbedContent")]
+        public static EmbeddingsStoreOutputResponse EmbedContent(
+            [ServiceBusTrigger("%ServiceBusQueueName%", Connection = "serviceBusConnection")]
+                QueuePayload queueItem
+        )
+        {
+            return new EmbeddingsStoreOutputResponse
             {
-                QueueMessage = payload,
-                HttpResponse = responseData
+                SearchableDocument = new SearchableDocument(queueItem.FileName ?? "")
             };
         }
 
         public class EmbeddingsStoreOutputResponse
         {
-            [EmbeddingsStoreOutput("{FileName}", InputType.FilePath,"AISearchEndpoint", "openai-index", Model = "%EMBEDDING_MODEL_DEPLOYMENT_NAME%")]
-            
+            [EmbeddingsStoreOutput(
+                "{FileName}",
+                InputType.FilePath,
+                "AISearchEndpoint",
+                "openai-index",
+                Model = "%EMBEDDING_MODEL_DEPLOYMENT_NAME%"
+            )]
             public required SearchableDocument SearchableDocument { get; init; }
         }
 
-        [Function("EmbedContent")]
-        public static async Task<EmbeddingsStoreOutputResponse> EmbedContent(
-        [ServiceBusTrigger("%ServiceBusQueueName%", Connection = "serviceBusConnection")] QueuePayload queueItem)
+        public class QueueHttpResponse
         {
-            return new EmbeddingsStoreOutputResponse
-            {
-            SearchableDocument = new SearchableDocument(queueItem.FileName)
-            };
+            [ServiceBusOutput("%ServiceBusQueueName%", Connection = "serviceBusConnection")]
+            public QueuePayload[]? QueueMessage { get; set; }
 
+            [HttpResult]
+            public IActionResult? HttpResponse { get; set; }
         }
+
+        public class QueuePayload
+        {
+            public string? FileName { get; set; }
+        }
+
+        public record UploadResponse(string Message, bool Success);
     }
 }
