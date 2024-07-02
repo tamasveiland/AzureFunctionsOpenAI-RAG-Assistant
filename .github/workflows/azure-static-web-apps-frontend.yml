@@ -63,12 +63,9 @@ jobs:
       - name: Azure Login
         uses: Azure/login@v2.1.0
         with:
-          # ClientId of the Azure Service principal created.
-          client-id: "$Env:AZURE_CLIENT_ID"
-          # TenantId of the Azure Service principal created.
-          tenant-id: "$Env:AZURE_TENANT_ID"
-          # Azure subscriptionId
-          subscription-id: "$Env:AZURE_SUBSCRIPTION_ID"
+          client-id: ${{ $Env:AZURE_CLIENT_ID }}
+          tenant-id: ${{ $Env:AZURE_TENANT_ID }}
+          subscription-id: ${{ $Env:AZURE_SUBSCRIPTION_ID }}
           enable-AzPSSession: true
           
       - name: Deploy Function App
