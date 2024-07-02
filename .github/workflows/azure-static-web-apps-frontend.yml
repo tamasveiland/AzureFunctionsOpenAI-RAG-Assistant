@@ -75,6 +75,11 @@ jobs:
             # ./dotnet-install.sh --version latest
             ./dotnet-install.sh --channel 8.0
             # apk add dotnet6-sdk
+
+            export DOTNET_ROOT=$(pwd)/.dotnet
+            export PATH=$PATH:$DOTNET_ROOT:$DOTNET_ROOT/tools
+            export dnet_root=/root/.dotnet
+            export PATH=$PATH:$dnet_root:$dnet_root/tools
             
             cd /home/runner/work/AzureFunctionsOpenAI-RAG-Assistant/AzureFunctionsOpenAI-RAG-Assistant/app/backend
             func azure functionapp publish "func-vrg4tkrp6r3vi-functions" --dotnet-isolated
