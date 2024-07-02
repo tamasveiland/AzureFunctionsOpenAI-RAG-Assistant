@@ -69,7 +69,8 @@ jobs:
             chmod +x func
             chmod +x gozip
             export PATH=`pwd`:$PATH
-            cd ./app/backend
+            ls
+            cd /home/runner/work/AzureFunctionsOpenAI-RAG-Assistant/AzureFunctionsOpenAI-RAG-Assistant/app/backend
             func azure functionapp publish $Env:AZURE_FUNCTION_APP --dotnet-isolated
 
       # - name: Deploy Function App
@@ -77,7 +78,7 @@ jobs:
       #   with:
       #     # Specify the script here
       #     inlineScript: |
-      #       cd ./app/backend
+      #       cd /home/runner/work/AzureFunctionsOpenAI-RAG-Assistant/AzureFunctionsOpenAI-RAG-Assistant/app/backend
       #       func azure functionapp publish $Env:AZURE_FUNCTION_APP --dotnet-isolated
   
   close_pull_request_job:
