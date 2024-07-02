@@ -37,6 +37,22 @@ jobs:
         run: |
           npm install -g @azure/static-web-apps-cli
 
+      - name: Log in with Azure (Federated Credentials)
+        if: ${{ env.AZURE_CLIENT_ID != '' }}
+        run: |
+          azd auth login `
+            --client-id "$Env:AZURE_CLIENT_ID" `
+            --federated-credential-provider "github" `
+            --tenant-id "$Env:AZURE_TENANT_ID"
+          azd config set defaults.subscription "$Env:AZURE_SUBSCRIPTION_ID"
+          azd config set defaults.location "$Env:AZURE_LOCATION"
+          #echo 'Login successful.'
+          #echo 'Get list of available subscriptions:'
+          #az account subscription list
+          #echo 'Trying to set subscription...'
+          #az account set --subscription ${{ env.AZURE_SUBSCRIPTION_ID }}
+        shell: pwsh
+
       - name: Log in with Azure (Client Credentials)
         if: ${{ env.AZURE_CREDENTIALS != '' }}
         run: |
@@ -50,6 +66,20 @@ jobs:
         shell: pwsh
         env:
           AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # - name: Log in with Azure (Client Credentials)
+      #   if: ${{ env.AZURE_CREDENTIALS != '' }}
+      #   run: |
+      #     $info = $Env:AZURE_CREDENTIALS | ConvertFrom-Json -AsHashtable;
+      #     Write-Host "::add-mask::$($info.clientSecret)"
+
+      #     azd auth login `
+      #       --client-id "$($info.clientId)" `
+      #       --client-secret "$($info.clientSecret)" `
+      #       --tenant-id "$($info.tenantId)"
+      #   shell: pwsh
+      #   env:
+      #     AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Provision Infrastructure
         run: azd provision --no-prompt
