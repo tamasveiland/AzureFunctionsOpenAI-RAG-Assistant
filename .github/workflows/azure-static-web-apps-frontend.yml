@@ -70,9 +70,10 @@ jobs:
             chmod +x gozip
             export PATH=`pwd`:$PATH
 
-            wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh
-            chmod +x ./dotnet-install.sh
-            ./dotnet-install.sh --version latest
+            # wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh
+            # chmod +x ./dotnet-install.sh
+            # ./dotnet-install.sh --version latest
+            apk add dotnet8-sdk
             
             cd /home/runner/work/AzureFunctionsOpenAI-RAG-Assistant/AzureFunctionsOpenAI-RAG-Assistant/app/backend
             func azure functionapp publish "func-vrg4tkrp6r3vi-functions" --dotnet-isolated
