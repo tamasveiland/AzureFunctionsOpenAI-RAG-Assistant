@@ -69,14 +69,16 @@ jobs:
             chmod +x func
             chmod +x gozip
             export PATH=`pwd`:$PATH
-
-      - name: Deploy Function App
-        uses: Azure/cli@v2.0.0
-        with:
-          # Specify the script here
-          inlineScript: |
             cd ./app/backend
             func azure functionapp publish $Env:AZURE_FUNCTION_APP --dotnet-isolated
+
+      # - name: Deploy Function App
+      #   uses: Azure/cli@v2.0.0
+      #   with:
+      #     # Specify the script here
+      #     inlineScript: |
+      #       cd ./app/backend
+      #       func azure functionapp publish $Env:AZURE_FUNCTION_APP --dotnet-isolated
   
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
