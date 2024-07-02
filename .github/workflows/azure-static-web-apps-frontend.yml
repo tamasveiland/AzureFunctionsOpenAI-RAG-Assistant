@@ -50,22 +50,12 @@ jobs:
           output_location: "dist" # Built app content directory - optional
           app_build_command: "npm run build"
           ###### End of Repository/Build Configurations ######
-      # - name: Log in with Azure (Federated Credentials)
-      #   if: ${{ env.AZURE_CLIENT_ID != '' }}
-      #   run: |
-      #     azd auth login `
-      #       --client-id "$Env:AZURE_CLIENT_ID" `
-      #       --federated-credential-provider "github" `
-      #       --tenant-id "$Env:AZURE_TENANT_ID"
-      #     azd config set defaults.subscription "$Env:AZURE_SUBSCRIPTION_ID"
-      #     azd config set defaults.location "$Env:AZURE_LOCATION"
-      #   shell: pwsh
       - name: Azure Login
         uses: Azure/login@v2.1.0
         with:
-          client-id: ${{ env:AZURE_CLIENT_ID }}
-          tenant-id: ${{ env:AZURE_TENANT_ID }}
-          subscription-id: ${{ env:AZURE_SUBSCRIPTION_ID }}
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
           enable-AzPSSession: true
           
       - name: Deploy Function App
