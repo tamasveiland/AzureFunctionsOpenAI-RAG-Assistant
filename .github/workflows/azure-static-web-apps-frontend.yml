@@ -69,8 +69,7 @@ jobs:
           tenant-id: "$Env:AZURE_TENANT_ID"
           # Azure subscriptionId
           subscription-id: "$Env:AZURE_SUBSCRIPTION_ID"
-          # The type of authentication. Supported values are SERVICE_PRINCIPAL, IDENTITY. Default value is SERVICE_PRINCIPAL
-          auth-type: 'IDENTITY' # optional, default is SERVICE_PRINCIPAL
+          enable-AzPSSession: true
           
       - name: Deploy Function App
         uses: Azure/functions-action@v1.5.1
