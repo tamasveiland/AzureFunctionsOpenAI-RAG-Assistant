@@ -43,7 +43,7 @@ jobs:
         uses: Azure/functions-action@v1.5.1
         with:
           # Name of the Azure Function App
-          app-name: ${{ vars.AZURE_FUNCTION_APP }}
+          app-name: ${{ env.AZURE_FUNCTION_APP }}
           # Path to package or folder. *.zip or a folder to deploy
           package: 'app/backend' # optional, default is .
           # Automatically look up Java function app artifact from pom.xml (default: 'false'). When this is set to 'true', 'package' should point to the folder of host.json.
