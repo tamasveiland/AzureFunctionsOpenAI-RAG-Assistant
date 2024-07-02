@@ -19,6 +19,8 @@ jobs:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     name: Build and Deploy Job
+    env:
+      AZURE_FUNCTION_APP: 'func-vrg4tkrp6r3vi-functions'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -37,6 +39,22 @@ jobs:
           output_location: "dist" # Built app content directory - optional
           app_build_command: "npm run build"
           ###### End of Repository/Build Configurations ######
+      - name: Azure Functions Action
+        uses: Azure/functions-action@v1.5.1
+        with:
+          # Name of the Azure Function App
+          app-name: ''
+          # Path to package or folder. *.zip or a folder to deploy
+          package: 'app/backend' # optional, default is .
+          # Automatically look up Java function app artifact from pom.xml (default: 'false'). When this is set to 'true', 'package' should point to the folder of host.json.
+          respect-pom-xml: false # optional, default is false
+          # Remove unwanted files defined in .funcignore file (default: 'false'). When this is set to 'true', 'package' should point to the folder of host.json.
+          respect-funcignore: false # optional, default is false
+          # Enable build action from Kudu when the package is deployed onto the function app. This will temporarily change the SCM_DO_BUILD_DURING_DEPLOYMENT setting for this deployment. To bypass this and use the existing settings from your function app, please set this to an empty string ''. To enable remote build for your project, please set this and 'enable-oryx-build' both to 'true'. By default, GitHub Action respects the packages resolved in GitHub workflow, disabling the redundant build action from Kudu endpoint. (default: 'false').
+          scm-do-build-during-deployment: false # optional, default is false
+          # Use Oryx Build from Kudu when the package is deployed onto the function app. (Linux functions only). This will temporarily change the ENABLE_ORYX_BUILD setting from this deployment. To bypass this and use the existing settings from your function app, please set this to an empty string ''. To enable remote build for your project, please set this and 'scm-do-build-during-deployment' both to 'true'. By default, GitHub Action respects the packages resolved in GitHub workflow, disabling the redundant build action from Kudu endpoint. (default: 'false').
+          enable-oryx-build: false # optional, default is false
+          
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
