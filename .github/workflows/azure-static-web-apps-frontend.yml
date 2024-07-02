@@ -24,9 +24,9 @@ jobs:
   build_and_deploy_job:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    container:
+    #container:
       # image: mcr.microsoft.com/azure-dev-cli-apps:latest
-      image: mcr.microsoft.com/azure-cli:latest
+      # image: mcr.microsoft.com/azure-cli:latest
     name: Build and Deploy Job
     env:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
